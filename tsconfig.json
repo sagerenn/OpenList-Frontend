@@ -20,5 +20,6 @@
     },
     "skipLibCheck": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": ["e2e", "playwright.config.ts", "dist", "node_modules"]
 }

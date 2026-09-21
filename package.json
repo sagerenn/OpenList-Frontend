@@ -32,11 +32,14 @@
     "serve": "vite preview",
     "prepare": "husky",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "format": "prettier --ignore-path .gitignore -w \"src/**/*.{js,ts,json,css,tsx,jsx}\""
+    "format": "prettier --ignore-path .gitignore -w \"src/**/*.{js,ts,json,css,tsx,jsx}\"",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
   },
   "license": "MIT",
   "devDependencies": {
     "@crowdin/cli": "^5.0.2",
+    "@playwright/test": "^1.49.0",
     "@types/bencode": "^4.0.0",
     "@types/crypto-js": "^4.2.2",
     "@types/mark.js": "^8.11.12",

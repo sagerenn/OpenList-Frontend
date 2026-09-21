@@ -1,0 +1,129 @@
+# End-to-end tests for the OpenList-Frontend against a live openlist-ext
+# backend. The backend embeds OpenList in-process and serves the built
+# frontend dist on the same origin, so the E2E flow is:
+#
+#   1. Build the openlist-ext binary (checked out from the backend repo).
+#   2. Build the frontend dist and seed it into the backend's data directory
+#      so BootOpenList serves the real UI (with the Extension section) instead
+#      of the placeholder.
+#   3. Start the backend with a deterministic admin password.
+#   4. Run Playwright against http://localhost:5245.
+#
+# The tests verify the manage panel loads, the Extension menu group appears
+# when the extension backend is present, and is hidden when /ext/healthz is
+# absent (forward compatibility).
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The backend repo + ref to build the openlist-ext binary from. Override
+  # with repo variables if you fork either project.
+  BACKEND_REPO: ${{ vars.OPENLIST_BACKEND_REPO || 'sagerenn/openlist' }}
+  BACKEND_REF: ${{ vars.OPENLIST_BACKEND_REF || 'main' }}
+  LISTEN_PORT: "5245"
+  ADMIN_PASSWORD: "admin"
+
+jobs:
+  e2e:
+    name: Frontend E2E vs openlist-ext backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+
+      - name: Checkout backend (openlist-ext)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BACKEND_REPO }}
+          ref: ${{ env.BACKEND_REF }}
+          path: backend
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Build openlist-ext binary
+        working-directory: backend
+        run: go build -o /tmp/openlist-ext .
+
+      - uses: pnpm/action-setup@v6
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install frontend deps
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build frontend dist
+        run: pnpm build
+
+      - name: Seed frontend dist into backend data dir
+        run: |
+          mkdir -p /tmp/data/dist
+          cp -a dist/. /tmp/data/dist/
+          # BootOpenList skips the placeholder when index.html already exists.
+          test -f /tmp/data/dist/index.html
+
+      - name: Start openlist-ext backend
+        env:
+          OPENLIST_ADMIN_PASSWORD: ${{ env.ADMIN_PASSWORD }}
+          DATA_DIR: /tmp/data
+          LISTEN_ADDR: ":${{ env.LISTEN_PORT }}"
+          LOOPBACK_ADDR: "http://127.0.0.1:${{ env.LISTEN_PORT }}"
+        run: |
+          /tmp/openlist-ext > /tmp/openlist-ext.log 2>&1 &
+          echo $! > /tmp/openlist-ext.pid
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:${{ env.LISTEN_PORT }}/ext/healthz || true)
+            if [ "$code" = "200" ]; then echo "backend healthy"; exit 0; fi
+            sleep 1
+          done
+          echo "backend did not become healthy; logs:" && cat /tmp/openlist-ext.log
+          exit 1
+
+      - name: Install Playwright browsers
+        run: pnpm e2e:install
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://127.0.0.1:${{ env.LISTEN_PORT }}
+        run: pnpm e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            /tmp/openlist-ext.log
+          retention-days: 7
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f /tmp/openlist-ext.pid ]; then kill "$(cat /tmp/openlist-ext.pid)" 2>/dev/null || true; fi
