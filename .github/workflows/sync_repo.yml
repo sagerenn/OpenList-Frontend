@@ -10,6 +10,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     name: Sync Repository
+    # Skip in forks that haven't configured the GITEE_REPO_URL variable —
+    # without it the gitee remote is empty and git push fails (exit 129).
+    if: ${{ vars.GITEE_REPO_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

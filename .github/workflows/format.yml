@@ -7,6 +7,11 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
+    # This job pushes formatting commits back via a bot token (BOT_TOKEN) and
+    # signs them with a bot GPG key — secrets that only exist in the upstream
+    # repo. Skip it in forks so a missing secret fails the checkout step.
+    # secrets.* can't be referenced in a job-level if, so gate on repository.
+    if: ${{ github.repository == 'OpenListTeam/OpenList-Frontend' }}
 
     permissions:
       contents: write
