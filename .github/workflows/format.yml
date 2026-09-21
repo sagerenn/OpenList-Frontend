@@ -7,6 +7,9 @@ on:
 jobs:
   format:
     runs-on: ubuntu-latest
+    # Skip in forks that haven't configured the BOT_TOKEN secret — without it
+    # actions/checkout fails with "Input required and not supplied: token".
+    if: ${{ secrets.BOT_TOKEN != '' }}
 
     permissions:
       contents: write

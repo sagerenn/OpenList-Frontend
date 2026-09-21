@@ -32,13 +32,26 @@ test.beforeEach(async ({ context }) => {
 })
 
 // Log in as admin via the real login form and land on the manage panel.
+//
+// After a successful login the app navigates to the redirect target, which
+// defaults to base_path || "/" (the file browser home) — not /@manage. Rather
+// than depend on the app's redirect behavior, we wait for the auth token to
+// land in localStorage (proving login succeeded), then navigate explicitly to
+// /@manage. The MustUser guard sees the token and renders the manage panel.
 async function loginAsAdmin(page: Page) {
-  await page.goto("/@manage")
+  await page.goto("/@login")
   // The login page renders when not authenticated.
   await page.getByPlaceholder("Input your username").fill("admin")
   await page.getByPlaceholder("Input your password").fill("admin")
   await page.getByRole("button", { name: "Login", exact: true }).click()
-  // Wait for the manage panel shell to render by looking for the side menu.
+  // Wait for the auth token to be persisted by changeToken(), which fires
+  // before the app's post-login navigation. Polling localStorage avoids a
+  // fixed sleep and tolerates the async login round-trip.
+  await expect
+    .poll(async () => page.evaluate(() => localStorage.getItem("token")))
+    .not.toBeNull()
+  // Now that we're authenticated, go to the manage panel directly.
+  await page.goto("/@manage")
   await expect(page).toHaveURL(/\/@manage/, { timeout: 30_000 })
 }
 
