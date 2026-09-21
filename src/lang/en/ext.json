@@ -1,0 +1,73 @@
+{
+  "sidemenu": {
+    "extension": "Extension",
+    "ext_domain": "Domains",
+    "ext_ttl": "File TTL",
+    "ext_listperm": "List Permission",
+    "ext_lb": "Load Balance",
+    "ext_apikeys": "API Keys"
+  },
+  "title": "openlist-ext",
+  "description": "Per-user domain routing, file TTL, list permission, upload load-balancing, and API keys — configured per user.",
+  "user_id": "User ID",
+  "user_id_placeholder": "Enter OpenList user ID",
+  "host": "Host",
+  "host_placeholder": "e.g. alice.example.com",
+  "bind": "Bind",
+  "unbind": "Unbind",
+  "bound_domains": "Bound domains",
+  "no_domains": "No domains bound",
+  "ttl": {
+    "enabled": "Enabled",
+    "mode": "Expiry mode",
+    "mode_fixed": "Fixed time (upload time + duration)",
+    "mode_access": "Sliding window (refreshed on download)",
+    "duration": "Duration (seconds)",
+    "save": "Save TTL",
+    "sweep": "Sweep now",
+    "sweep_success": "Swept {{count}} expired file(s)",
+    "current": "Current TTL config"
+  },
+  "listperm": {
+    "can_list": "Can list directories",
+    "can_read": "Can read files",
+    "save": "Save permission",
+    "current": "Current list permission",
+    "hint": "Disable both for a write-only drop box."
+  },
+  "lb": {
+    "name": "Group name",
+    "strategy": "Strategy",
+    "path_prefix": "Path prefix",
+    "path_prefix_placeholder": "e.g. /lb/photos (optional)",
+    "create": "Create group",
+    "groups": "Load-balance groups",
+    "no_groups": "No groups",
+    "members": "Members",
+    "mount_path": "Mount path",
+    "mount_path_placeholder": "e.g. /s3",
+    "weight": "Weight",
+    "add_member": "Add member",
+    "upload_count": "Uploads",
+    "delete_group": "Delete group"
+  },
+  "apikey": {
+    "name": "Key name",
+    "name_placeholder": "e.g. ci",
+    "scopes": "Scopes",
+    "create": "Create key",
+    "keys": "API keys",
+    "no_keys": "No API keys",
+    "prefix": "Prefix",
+    "enabled": "Enabled",
+    "secret_created": "Secret (copy now — shown once)",
+    "copy_secret": "Copy secret",
+    "enable": "Enable",
+    "disable": "Disable",
+    "last_used": "Last used",
+    "never": "never"
+  },
+  "load_users": "Load users",
+  "select_user": "Select user",
+  "fetch_user_error": "Failed to load users"
+}

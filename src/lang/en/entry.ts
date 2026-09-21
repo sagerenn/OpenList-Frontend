@@ -1,5 +1,6 @@
 import br from "./br.json"
 import drivers from "./drivers.json"
+import ext from "./ext.json"
 import global from "./global.json"
 import home from "./home.json"
 import index from "./index.json"
@@ -19,6 +20,7 @@ import users from "./users.json"
 export const dict = {
   br,
   drivers,
+  ext,
   global,
   home,
   index,

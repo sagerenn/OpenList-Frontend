@@ -5,15 +5,27 @@ import { Header } from "./Header"
 import { SideMenu } from "./SideMenu"
 import { side_menu_items } from "./sidemenu_items"
 import { Route, Routes } from "@solidjs/router"
-import { createMemo, For, Suspense } from "solid-js"
+import { createMemo, For, onMount, Suspense } from "solid-js"
 import { routes } from "./routes"
 import { getBackendKind } from "~/utils/backend"
+import { extAvailable, probeAvailability } from "~/utils/ext_api"
 
 const Manage = () => {
   const t = useT()
   useTitle(() => t("manage.title"))
+  // Probe once for the openlist-ext backend so the side-menu can hide the
+  // Extension group when it is absent (forward compatibility with stock
+  // OpenList). The probe is cached and never throws.
+  onMount(() => {
+    probeAvailability()
+  })
   const visibleRoutes = createMemo(() =>
-    routes.filter((r) => !r.backend || r.backend.includes(getBackendKind())),
+    routes.filter(
+      (r) =>
+        (!r.backend || r.backend.includes(getBackendKind())) &&
+        // Hide extension routes when the extension backend is absent.
+        (!r.ext || extAvailable()),
+    ),
   )
   return (
     <Box

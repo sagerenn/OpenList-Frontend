@@ -4,7 +4,7 @@ import { trimLeft } from "~/utils"
 import { SideMenuItem, side_menu_items } from "./sidemenu_items"
 import { useManageTitle } from "~/hooks"
 
-type Route = Pick<SideMenuItem, "to" | "component" | "backend">
+type Route = Pick<SideMenuItem, "to" | "component" | "backend" | "ext">
 
 const hide_routes: Route[] = [
   {
@@ -76,6 +76,7 @@ const get_routes = (items: SideMenuItem[], acc: Route[] = []) => {
       acc.push({
         to: trimLeft(item.to!, "/@manage"),
         backend: item.backend,
+        ext: item.ext,
         component:
           item.component ||
           (() => <Placeholder title={item.title} to={item.to || "empty"} />),

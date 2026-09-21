@@ -9,6 +9,7 @@ import { AnchorWithBase } from "~/components"
 import { Link } from "@solidjs/router"
 import { hoverColor, joinBase } from "~/utils"
 import { BackendKind, getBackendKind } from "~/utils/backend"
+import { extAvailable } from "~/utils/ext_api"
 import { IconTypes } from "solid-icons"
 
 export interface SideMenuItemProps {
@@ -21,11 +22,16 @@ export interface SideMenuItemProps {
   refresh?: true
   /** Restrict this item to specific backends (e.g. ["go"] or ["ts-worker"]). */
   backend?: BackendKind[]
+  /** Show only when the openlist-ext backend is present (forward compat). */
+  ext?: true
 }
 
 const SideMenuItem = (props: SideMenuItemProps) => {
   const ifShow = createMemo(() => {
     if (props.backend && !props.backend.includes(getBackendKind())) return false
+    // Extension items are hidden entirely when the openlist-ext backend is
+    // not reachable, so stock-OpenList deployments show no broken pages.
+    if (props.ext && !extAvailable()) return false
     if (!UserMethods.is_admin(me())) {
       if (props.role === undefined) return false
       else if (props.role === UserRole.GENERAL && !UserMethods.is_general(me()))

@@ -14,6 +14,7 @@ import {
   BsBucket,
   BsHddNetwork,
   BsArrowLeftRight,
+  BsShieldFillExclamation,
 } from "solid-icons/bs"
 import { FiLogIn } from "solid-icons/fi"
 import { SiMetabase } from "solid-icons/si"
@@ -173,6 +174,53 @@ export const side_menu_items: SideMenuItem[] = [
     icon: BsPersonCircle,
     to: "/@manage/users",
     component: lazy(() => import("./users/Users")),
+  },
+  {
+    // openlist-ext: per-user domain, TTL, list permission, load balance,
+    // and API key configuration. The whole group is gated by `ext: true`,
+    // which the SideMenu hides when the openlist-ext backend is not
+    // reachable (forward compatibility with stock OpenList). Admin-only.
+    title: "manage.sidemenu.extension",
+    icon: BsShieldFillExclamation,
+    to: "/@manage/ext",
+    ext: true,
+    children: [
+      {
+        title: "manage.sidemenu.ext_domain",
+        icon: BsArrowLeftRight,
+        to: "/@manage/ext/domain",
+        ext: true,
+        component: lazy(() => import("./ext/Domain")),
+      },
+      {
+        title: "manage.sidemenu.ext_ttl",
+        icon: BsMedium,
+        to: "/@manage/ext/ttl",
+        ext: true,
+        component: lazy(() => import("./ext/Ttl")),
+      },
+      {
+        title: "manage.sidemenu.ext_listperm",
+        icon: BsPersonCircle,
+        to: "/@manage/ext/listperm",
+        ext: true,
+        component: lazy(() => import("./ext/ListPerm")),
+      },
+      {
+        title: "manage.sidemenu.ext_lb",
+        icon: BsCloudUploadFill,
+        to: "/@manage/ext/lb",
+        ext: true,
+        component: lazy(() => import("./ext/LoadBalance")),
+      },
+      {
+        title: "manage.sidemenu.ext_apikeys",
+        icon: BsFingerprint,
+        to: "/@manage/ext/apikeys",
+        ext: true,
+        component: lazy(() => import("./ext/ApiKeys")),
+      },
+    ],
   },
   {
     title: "manage.sidemenu.storages",
