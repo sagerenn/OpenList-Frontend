@@ -63,7 +63,8 @@
     "size": "Size",
     "filter_user": "Filter by user ID",
     "filter_user_placeholder": "All users (leave empty)",
-    "delete_record": "Delete record"
+    "delete_record": "Delete record",
+    "view_file": "View"
   },
   "apikey": {
     "name": "Key name",
