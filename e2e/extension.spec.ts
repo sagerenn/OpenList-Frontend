@@ -111,3 +111,39 @@ test.describe("Extension menu forward compatibility", () => {
     await expect(page.getByText("Extension", { exact: true })).toHaveCount(0)
   })
 })
+
+test.describe("Load Balance admin UI", () => {
+  // Regression test for the reported bug: after creating a group in the
+  // manage UI, the groups table stayed empty. Root cause: the backend's
+  // GET /ext/admin/lb/group read the user id from a :user_id path param
+  // that this route doesn't have, so every list call 400'd; the frontend
+  // additionally suppressed the error toast and only refreshed on an
+  // explicit Refresh click. This spec exercises the whole flow through the
+  // real UI: pick a user, create a group, and expect it in the table.
+  test("created group appears in the groups list", async ({ page }) => {
+    await loginAsAdmin(page)
+
+    // Open the Load Balance config page. (Assert on the Create button, not
+    // the "Group name" text: that string matches both the form label and
+    // the table column header.)
+    await page.goto(p("/@manage/ext/lb"))
+    await expect(
+      page.getByRole("button", { name: "Create group", exact: true }),
+    ).toBeVisible({ timeout: 30_000 })
+
+    // Pick the admin user (the only seeded user in the e2e backend).
+    await page.getByText("Select user").first().click()
+    await page.getByRole("option", { name: /admin \(id: 1\)/ }).click()
+
+    // Creating a group should make it appear in the groups table without an
+    // explicit Refresh: user selection triggers a refresh, and onCreate
+    // refreshes again after the create succeeds.
+    await page.getByPlaceholder("Group name").fill("e2e-group")
+    await page
+      .getByRole("button", { name: "Create group", exact: true })
+      .click()
+    await expect(
+      page.getByRole("cell", { name: "e2e-group", exact: true }),
+    ).toBeVisible({ timeout: 20_000 })
+  })
+})

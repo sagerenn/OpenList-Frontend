@@ -73,21 +73,18 @@ const LoadBalance = () => {
     const uid = userId()
     if (uid === undefined) return
     const resp = await listGroups(uid)
-    handleResp(resp, (data) => setGroups(data), undefined, true, false)
+    // notify_error defaults to true: a failed list fetch (e.g. a 400 from a
+    // contract mismatch) must surface as a toast, not leave the table
+    // silently empty behind the create form's success toast.
+    handleResp(resp, (data) => setGroups(data))
   }
 
   const loadMembers = async (id: number) => {
     const resp: PExtResp<LBGroupDetail> = extApi.get(`/lb/group/${id}`)
     const r = await resp
-    handleResp(
-      r,
-      (data) => {
-        setDetails((prev) => ({ ...prev, [id]: data.members }))
-      },
-      undefined,
-      true,
-      false,
-    )
+    handleResp(r, (data) => {
+      setDetails((prev) => ({ ...prev, [id]: data.members }))
+    })
   }
 
   const onCreate = async () => {
@@ -138,6 +135,9 @@ const LoadBalance = () => {
             value={userId()}
             onChange={(uid) => {
               setUserId(uid)
+              // Load the selected user's groups immediately; the table
+              // shouldn't wait for an explicit Refresh click.
+              refresh()
             }}
           />
         </Box>
