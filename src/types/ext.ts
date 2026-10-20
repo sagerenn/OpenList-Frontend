@@ -57,6 +57,21 @@ export interface LBGroupDetail {
   members: LBMember[]
 }
 
+// LBUploadRecord is one load-balanced upload: the logical path the client
+// addressed (under the group's path prefix) and the member/physical path it
+// actually landed on. Powers the admin uploads view.
+export interface LBUploadRecord {
+  id: number
+  user_id: number
+  group_id: number
+  group_name: string
+  source_path: string
+  target_mount: string
+  target_path: string
+  size: number
+  created_at: string
+}
+
 // ---- Feature 5: API keys ----
 
 export type APIKeyScope =

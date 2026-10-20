@@ -147,3 +147,130 @@ test.describe("Load Balance admin UI", () => {
     ).toBeVisible({ timeout: 20_000 })
   })
 })
+
+test.describe("LB Uploads admin UI", () => {
+  // Provisions a path-activated LB upload end to end through the real
+  // backend (storage -> api key -> group with prefix -> upload with an
+  // encoded File-Path and NO X-LB-Group header), then verifies the manage
+  // page: the record appears in the uploads table, and deleting it through
+  // the UI removes the row. The unique share id makes the source path
+  // unique per run, so repeated runs against a persistent backend assert
+  // only on their own record.
+  const STORAGE_ROOT = "/tmp/e2e-lb-uploads"
+  const GROUP_NAME = "e2e-uploads-group"
+  const PREFIX = "/e2e-share"
+  const MEMBER = "/e2e-infini"
+
+  // Login over the API (the manage UI's own token needs the login page
+  // anyway) and return the raw admin JWT. OpenList expects the JWT WITHOUT
+  // a Bearer prefix.
+  async function adminToken(request: any): Promise<string> {
+    const resp = await request.post(p("/api/auth/login"), {
+      data: { username: "admin", password: "admin" },
+    })
+    expect(resp.status()).toBe(200)
+    return (await resp.json()).data.token
+  }
+
+  // Best-effort create: idempotent seeding across runs (duplicate storage
+  // mounts, group names, and members are rejected by unique indexes —
+  // which is exactly what we want to tolerate).
+  async function tryCreate(
+    request: any,
+    url: string,
+    token: string,
+    data: any,
+  ) {
+    const resp = await request.post(p(url), {
+      headers: { Authorization: token },
+      data,
+    })
+    expect([200, 400, 500]).toContain(resp.status())
+    return resp
+  }
+
+  test("path-activated upload appears in the uploads table and is deletable", async ({
+    page,
+    request,
+  }) => {
+    const token = await adminToken(request)
+    // A Local storage to back the group member.
+    await tryCreate(request, "/api/admin/storage/create", token, {
+      mount_path: MEMBER,
+      driver: "Local",
+      addition: JSON.stringify({
+        root_folder_path: STORAGE_ROOT,
+        thumbnail: false,
+        show_hidden: true,
+      }),
+    })
+    // An API key for the admin user (the group's owner).
+    const keyResp = await request.post(p("/ext/admin/apikey"), {
+      headers: { Authorization: token },
+      data: { user_id: 1, name: "e2e-lb-uploads", scopes: ["*"] },
+    })
+    expect(keyResp.status()).toBe(200)
+    const secret = (await keyResp.json()).data.secret
+
+    // Group with a path prefix + member mount: path activation target.
+    const groupResp = await tryCreate(request, "/ext/admin/lb/group", token, {
+      name: GROUP_NAME,
+      user_id: 1,
+      strategy: "round_robin",
+      path_prefix: PREFIX,
+    })
+    const listResp = await request.get(p(`/ext/admin/lb/group?user_id=1`), {
+      headers: { Authorization: token },
+    })
+    const groups = (await listResp.json()).data as Array<{
+      id: number
+      name: string
+    }>
+    const group = groups.find((g) => g.name === GROUP_NAME)
+    expect(group).toBeDefined()
+    await tryCreate(request, `/ext/admin/lb/group/${group!.id}/member`, token, {
+      mount_path: MEMBER,
+      weight: 1,
+    })
+
+    // Path-activated upload: File-Path under the prefix, no X-LB-Group.
+    const shareId = Date.now()
+    const sourcePath = `${PREFIX}/${shareId}/report.txt`
+    const uploadResp = await request.put(p("/api/fs/put"), {
+      headers: {
+        "X-Api-Key": secret,
+        "File-Path": encodeURIComponent(sourcePath),
+        "As-Task": "false",
+        Overwrite: "true",
+      },
+      data: "e2e lb uploads body",
+    })
+    expect(uploadResp.status()).toBe(200)
+    const uploadData = (await uploadResp.json()).data
+    // The upload was routed through the group: prefix replaced by the mount.
+    expect(uploadData.target_mount).toBe(MEMBER)
+    expect(uploadData.target_path).toBe(`${MEMBER}/${shareId}/report.txt`)
+
+    // The manage page lists the record.
+    await loginAsAdmin(page)
+    await page.goto(p("/@manage/ext/lb-uploads"))
+    await expect(
+      page.getByRole("cell", { name: sourcePath, exact: true }),
+    ).toBeVisible({ timeout: 30_000 })
+    // The target landed under the member mount.
+    await expect(
+      page.getByText(`${MEMBER}/${shareId}/report.txt`),
+    ).toBeVisible()
+
+    // Delete the record through the UI (confirm popover) and expect the row
+    // to disappear.
+    const row = page.getByRole("row", {
+      name: new RegExp(sourcePath.replace(/\//g, "\\/")),
+    })
+    await row.getByRole("button", { name: "Delete", exact: true }).click()
+    await page.getByRole("button", { name: "Confirm", exact: true }).click()
+    await expect(
+      page.getByRole("cell", { name: sourcePath, exact: true }),
+    ).toHaveCount(0, { timeout: 20_000 })
+  })
+})

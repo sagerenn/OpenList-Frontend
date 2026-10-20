@@ -5,7 +5,8 @@
     "ext_ttl": "File TTL",
     "ext_listperm": "List Permission",
     "ext_lb": "Load Balance",
-    "ext_apikeys": "API Keys"
+    "ext_apikeys": "API Keys",
+    "ext_lb_uploads": "LB Uploads"
   },
   "title": "openlist-ext",
   "description": "Per-user domain routing, file TTL, list permission, upload load-balancing, and API keys — configured per user.",
@@ -39,7 +40,7 @@
     "name": "Group name",
     "strategy": "Strategy",
     "path_prefix": "Path prefix",
-    "path_prefix_placeholder": "e.g. /lb/photos (optional)",
+    "path_prefix_placeholder": "e.g. /pshare (uploads and reads under this path route through the group)",
     "create": "Create group",
     "groups": "Load-balance groups",
     "no_groups": "No groups",
@@ -50,6 +51,19 @@
     "add_member": "Add member",
     "upload_count": "Uploads",
     "delete_group": "Delete group"
+  },
+  "lb_uploads": {
+    "uploads": "Uploaded items",
+    "no_uploads": "No load-balanced uploads yet",
+    "time": "Uploaded at",
+    "user": "User",
+    "group": "Group",
+    "source_path": "Source path",
+    "target": "Target",
+    "size": "Size",
+    "filter_user": "Filter by user ID",
+    "filter_user_placeholder": "All users (leave empty)",
+    "delete_record": "Delete record"
   },
   "apikey": {
     "name": "Key name",

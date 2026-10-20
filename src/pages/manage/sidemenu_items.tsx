@@ -10,6 +10,7 @@ import {
   BsFingerprint,
   BsFront,
   BsCloudUploadFill,
+  BsFolderFill,
   BsSearch,
   BsBucket,
   BsHddNetwork,
@@ -212,6 +213,13 @@ export const side_menu_items: SideMenuItem[] = [
         to: "/@manage/ext/lb",
         ext: true,
         component: lazy(() => import("./ext/LoadBalance")),
+      },
+      {
+        title: "manage.sidemenu.ext_lb_uploads",
+        icon: BsFolderFill,
+        to: "/@manage/ext/lb-uploads",
+        ext: true,
+        component: lazy(() => import("./ext/LBUploads")),
       },
       {
         title: "manage.sidemenu.ext_apikeys",
