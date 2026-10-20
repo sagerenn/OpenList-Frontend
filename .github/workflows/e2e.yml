@@ -12,6 +12,13 @@
 # The tests verify the manage panel loads, the Extension menu group appears
 # when the extension backend is present, and is hidden when /ext/healthz is
 # absent (forward compatibility).
+#
+# The matrix runs the whole suite twice: at the origin root, and under a
+# base path (SITE_URL=/files) as behind caddy / nginx / Apache httpd at
+# https://example.com/files/ — OpenList injects the prefix into index.html
+# (router/API base, asset base), and e2e/subpath.spec.ts additionally covers
+# the base-path injection, prefixed asset loading, and the index.html guard
+# that redirects a direct visit to the host root into the prefix.
 name: E2E
 
 on:
@@ -34,8 +41,18 @@ env:
 
 jobs:
   e2e:
-    name: Frontend E2E vs openlist-ext backend
+    name: Frontend E2E vs openlist-ext (${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: root
+            site-url: ""
+            base-path: ""
+          - name: subpath /files
+            site-url: "/files"
+            base-path: "/files"
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v4
@@ -90,6 +107,9 @@ jobs:
           DATA_DIR: /tmp/data
           LISTEN_ADDR: ":${{ env.LISTEN_PORT }}"
           LOOPBACK_ADDR: "http://127.0.0.1:${{ env.LISTEN_PORT }}"
+          # Empty for the root job; /files mounts the whole service under
+          # the prefix (OpenList's site_url mechanism).
+          SITE_URL: ${{ matrix.site-url }}
         run: |
           /tmp/openlist-ext > /tmp/openlist-ext.log 2>&1 &
           echo $! > /tmp/openlist-ext.pid
@@ -97,7 +117,7 @@ jobs:
       - name: Wait for backend health
         run: |
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:${{ env.LISTEN_PORT }}/ext/healthz || true)
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${{ env.LISTEN_PORT }}${{ matrix.base-path }}/ext/healthz" || true)
             if [ "$code" = "200" ]; then echo "backend healthy"; exit 0; fi
             sleep 1
           done
@@ -110,13 +130,17 @@ jobs:
       - name: Run E2E tests
         env:
           E2E_BASE_URL: http://127.0.0.1:${{ env.LISTEN_PORT }}
+          # Empty for the root job (all specs then run at the origin root);
+          # /files prefixes every in-app path in the specs and activates
+          # e2e/subpath.spec.ts.
+          E2E_BASE_PATH: ${{ matrix.base-path }}
         run: pnpm e2e
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.name }}
           path: |
             playwright-report/
             test-results/

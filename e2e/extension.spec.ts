@@ -19,6 +19,13 @@ import { test, expect, type Page } from "@playwright/test"
 
 const BASE = process.env.E2E_BASE_URL || "http://localhost:5245"
 
+// Base path for subpath deployments (E2E_BASE_PATH=/files runs the whole
+// suite against a backend configured with SITE_URL=/files). Every path
+// below goes through p(), so the same spec covers root and subpath; the
+// URL assertions use regexes that match either form.
+const BASE_PATH = process.env.E2E_BASE_PATH || ""
+const p = (path: string) => BASE_PATH + path
+
 // Pin the UI language to English before any page script runs, so the
 // text-based selectors match the English dictionary strings deterministically.
 test.beforeEach(async ({ context }) => {
@@ -39,7 +46,7 @@ test.beforeEach(async ({ context }) => {
 // land in localStorage (proving login succeeded), then navigate explicitly to
 // /@manage. The MustUser guard sees the token and renders the manage panel.
 async function loginAsAdmin(page: Page) {
-  await page.goto("/@login")
+  await page.goto(p("/@login"))
   // The login page renders when not authenticated.
   await page.getByPlaceholder("Input your username").fill("admin")
   await page.getByPlaceholder("Input your password").fill("admin")
@@ -51,7 +58,7 @@ async function loginAsAdmin(page: Page) {
     .poll(async () => page.evaluate(() => localStorage.getItem("token")))
     .not.toBeNull()
   // Now that we're authenticated, go to the manage panel directly.
-  await page.goto("/@manage")
+  await page.goto(p("/@manage"))
   await expect(page).toHaveURL(/\/@manage/, { timeout: 30_000 })
 }
 
@@ -59,12 +66,12 @@ test.describe("openlist-ext backend health", () => {
   test("/ext/healthz returns 200 (extension backend present)", async ({
     request,
   }) => {
-    const resp = await request.get("/ext/healthz")
+    const resp = await request.get(p("/ext/healthz"))
     expect(resp.status()).toBe(200)
   })
 
   test("root serves the built frontend index.html", async ({ request }) => {
-    const resp = await request.get("/")
+    const resp = await request.get(p("/"))
     expect(resp.status()).toBe(200)
     const body = await resp.text()
     // The built frontend index references the app root div.

@@ -28,6 +28,27 @@
       }
       window.__dynamic_base__ = window.OPENLIST_CONFIG.cdn || ""
     </script>
+    <script>
+      // Subpath guard: if the app is configured for a base path but got
+      // served at a URL outside it (e.g. the visitor hit the host root
+      // directly while the backend re-prefixes "/" for reverse proxies
+      // that strip the subpath), the router's base would match no route
+      // and the app would render blank. Send the browser to the same
+      // path under the configured base before the bundle loads. A no-op
+      // for root deployments (base_path "/" or undefined) and when the
+      // URL already lives under the base.
+      ;(function () {
+        var bp = window.OPENLIST_CONFIG.base_path
+        if (!bp) return
+        if (bp !== "/" && bp.charAt(0) !== "/") bp = "/" + bp
+        if (bp.length > 1 && bp.charAt(bp.length - 1) === "/")
+          bp = bp.slice(0, -1)
+        if (bp === "/" || bp === "") return
+        var p = location.pathname
+        if (p === bp || p.indexOf(bp + "/") === 0) return
+        location.replace(bp + p + location.search + location.hash)
+      })()
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
